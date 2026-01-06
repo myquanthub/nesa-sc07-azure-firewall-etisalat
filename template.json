@@ -1,0 +1,135 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "azureFirewalls_azure_fw_etisalat_name": {
+            "defaultValue": "azure-fw-etisalat",
+            "type": "String"
+        },
+        "publicIPAddresses_etisalat_fw_pip_externalid": {
+            "defaultValue": "/subscriptions/6003e2a5-1429-498e-b526-7d2493d85d58/resourceGroups/project-azure-fw-etisalat/providers/Microsoft.Network/publicIPAddresses/etisalat-fw-pip",
+            "type": "String"
+        },
+        "virtualNetworks_vnet_fw_lab_etisalat_externalid": {
+            "defaultValue": "/subscriptions/6003e2a5-1429-498e-b526-7d2493d85d58/resourceGroups/project-azure-fw-etisalat/providers/Microsoft.Network/virtualNetworks/vnet-fw-lab-etisalat",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/azureFirewalls",
+            "apiVersion": "2024-07-01",
+            "name": "[parameters('azureFirewalls_azure_fw_etisalat_name')]",
+            "location": "centralindia",
+            "properties": {
+                "sku": {
+                    "name": "AZFW_VNet",
+                    "tier": "Standard"
+                },
+                "threatIntelMode": "Deny",
+                "additionalProperties": {},
+                "ipConfigurations": [
+                    {
+                        "name": "etisalat-fw-pip",
+                        "id": "[concat(resourceId('Microsoft.Network/azureFirewalls', parameters('azureFirewalls_azure_fw_etisalat_name')), '/azureFirewallIpConfigurations/etisalat-fw-pip')]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[parameters('publicIPAddresses_etisalat_fw_pip_externalid')]"
+                            },
+                            "subnet": {
+                                "id": "[concat(parameters('virtualNetworks_vnet_fw_lab_etisalat_externalid'), '/subnets/AzureFirewallSubnet')]"
+                            }
+                        }
+                    }
+                ],
+                "networkRuleCollections": [
+                    {
+                        "name": "Allow-Outbound-Basic",
+                        "id": "[concat(resourceId('Microsoft.Network/azureFirewalls', parameters('azureFirewalls_azure_fw_etisalat_name')), '/networkRuleCollections/Allow-Outbound-Basic')]",
+                        "properties": {
+                            "priority": 200,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "DNS",
+                                    "protocols": [
+                                        "UDP"
+                                    ],
+                                    "sourceAddresses": [
+                                        "10.12.2.0/24"
+                                    ],
+                                    "destinationAddresses": [
+                                        "*"
+                                    ],
+                                    "sourceIpGroups": [],
+                                    "destinationIpGroups": [],
+                                    "destinationFqdns": [],
+                                    "destinationPorts": [
+                                        "53"
+                                    ]
+                                },
+                                {
+                                    "name": "HTTP-HTTPS",
+                                    "protocols": [
+                                        "TCP"
+                                    ],
+                                    "sourceAddresses": [
+                                        "10.12.2.0/24"
+                                    ],
+                                    "destinationAddresses": [
+                                        "*"
+                                    ],
+                                    "sourceIpGroups": [],
+                                    "destinationIpGroups": [],
+                                    "destinationFqdns": [],
+                                    "destinationPorts": [
+                                        "80",
+                                        "443"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "applicationRuleCollections": [
+                    {
+                        "name": "Allow-Web",
+                        "id": "[concat(resourceId('Microsoft.Network/azureFirewalls', parameters('azureFirewalls_azure_fw_etisalat_name')), '/applicationRuleCollections/Allow-Web')]",
+                        "properties": {
+                            "priority": 200,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "Microsoft-Updates",
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "fqdnTags": [],
+                                    "targetFqdns": [
+                                        "*.microsoft.com",
+                                        "*.windowsupdate.com",
+                                        "*.azureedge.net",
+                                        "www.google.com"
+                                    ],
+                                    "sourceAddresses": [
+                                        "10.12.2.0/24"
+                                    ],
+                                    "sourceIpGroups": []
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "natRuleCollections": []
+            }
+        }
+    ]
+}
