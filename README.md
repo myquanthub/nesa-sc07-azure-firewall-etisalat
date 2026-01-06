@@ -1,0 +1,1 @@
+# nesa-sc07-azure-firewall-etisalat
