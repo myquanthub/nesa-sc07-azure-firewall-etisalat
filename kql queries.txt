@@ -1,0 +1,37 @@
+AzureDiagnostics
+| where Category in ("AzureFirewallNetworkRule", "AzureFirewallApplicationRule")
+| where TimeGenerated > ago(12h)  // or adjust to your time range
+| extend 
+    Protocol = extract(@"^(\w+) request from", 1, msg_s),
+    Source = extract(@"from ([\d\.]+):", 1, msg_s),
+    SourcePort = extract(@"from [\d\.]+:(\d+)", 1, msg_s),
+    Destination = extract(@"to ([\d\.]+):", 1, msg_s),
+    DestinationPort = extract(@"to [\d\.]+:(\d+)", 1, msg_s),
+    Action = extract(@"\. Action: (\w+)", 1, msg_s),
+    RuleCollection = extract(@"\. Rule Collection: ([^\\.]+)", 1, msg_s),
+    Rule = extract(@"\. Rule: ([^\\.]+)", 1, msg_s)
+| project 
+    TimeGenerated, 
+    Category, 
+    Action, 
+    Protocol, 
+    Source, 
+    SourcePort, 
+    Destination, 
+    DestinationPort, 
+    RuleCollection, 
+    Rule, 
+    msg_s
+| order by TimeGenerated desc
+| take 20
+---------------------
+union AZFWNetworkRule, AZFWApplicationRule
+| order by TimeGenerated desc
+| take 50
+| project TimeGenerated, Action, Protocol, SourceIp, DestinationIp, DestinationPort, RuleName, RuleCollectionName, Category
+---------------------
+AzureDiagnostics
+| where Category in ("AzureFirewallNetworkRule", "AzureFirewallApplicationRule")
+| order by TimeGenerated desc
+| take 20
+| project TimeGenerated, Category, msg_s, OperationName, Resource
